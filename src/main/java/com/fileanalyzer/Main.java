@@ -1,17 +1,48 @@
 package com.fileanalyzer;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+import java.io.File;
+import java.io.IOException;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+/**
+ * Главный класс программы для восстановления расширений файлов.
+ */
+public class Main {
+    /**
+     * Точка входа в программу. Обрабатывает переданный файл и восстанавливает его расширение.
+     *
+     * @param args Аргументы командной строки. Ожидается один аргумент — путь к файлу.
+     */
+    public static void main(String[] args) {
+        AppLogger.info("Starting application...");
+
+        if (args.length == 0) {
+            AppLogger.warn("No file path provided.");
+            System.out.println("Usage: java -jar FileExtensionAnalyzer.jar <file_path>");
+            return;
+        }
+
+        String filePath = args[0];
+        AppLogger.info("Processing file: " + filePath);
+
+        try {
+            // Инициализация базы данных магических чисел
+            FileTypeDatabase database = new FileTypeDatabase("magic_numbers.txt"); // Передаем имя файла
+            FileAnalyzer analyzer = new FileAnalyzer(database);
+            FileExtensionRestorer restorer = new FileExtensionRestorer(analyzer);
+
+            File file = new File(filePath);
+            if (!file.exists()) {
+                AppLogger.warn("File not found: " + filePath);
+                System.out.println("File not found: " + filePath);
+                return;
+            }
+
+            // Восстановление расширения файла
+            restorer.restoreExtension(file);
+        } catch (IOException e) {
+            ExceptionHandler.handleException(e, "Error initializing database");
+        } catch (Exception e) {
+            ExceptionHandler.handleException(e, "Error processing file");
         }
     }
 }

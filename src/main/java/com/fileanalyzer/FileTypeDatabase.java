@@ -1,88 +1,63 @@
 package com.fileanalyzer;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Класс для анализа файлов и определения их расширений на основе магических чисел.
+ * Класс для хранения информации о поддерживаемых форматах файлов.
  */
-public class FileAnalyzer {
-    private final FileTypeDatabase database;
-
+public class FileTypeDatabase {
+    private final Map<String, String> magicNumberToExtension = new HashMap<>();
     /**
-     * Конструктор класса FileAnalyzer.
+     * Конструктор, который загружает магические числа из файла.
      *
-     * @param database База данных магических чисел и расширений.
+     * @param fileName Имя файла с магическими числами.
+     * @throws IOException Если произошла ошибка при чтении файла.
      */
-    public FileAnalyzer(FileTypeDatabase database) {
-        this.database = database;
+    public FileTypeDatabase(String fileName) throws IOException {
+        loadMagicNumbersFromFile(fileName);
     }
 
     /**
-     * Анализирует файл и возвращает его расширение на основе магического числа.
-     * <p>
-     * Если формат файла не поддерживается, выбрасывает исключение {@link UnsupportedFileFormatException}.
+     * Проверяет, поддерживается ли расширение файла.
      *
-     * @param file Файл для анализа.
-     * @return Расширение файла.
-     * @throws UnsupportedFileFormatException Если формат файла не поддерживается.
-     * @throws IOException Если произошла ошибка при чтении файла.
+     * @param extension Расширение файла.
+     * @return true, если расширение поддерживается, иначе false.
      */
-    public String analyzeFile(File file) throws UnsupportedFileFormatException, IOException {
-        // Получаем расширение файла из имени
-        String fileName = file.getName();
-        String fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-
-        // Проверяем, поддерживается ли расширение
-        if (!database.isSupportedExtension(fileExtension)) {
-            throw new UnsupportedFileFormatException("Unsupported file extension: " + fileExtension);
-        }
-
-        // Получаем магическое число файла
-        String magicNumber = getMagicNumber(file);
-        AppLogger.info("Analyzing file: " + fileName + ", magic number: " + magicNumber);
-
-        // Ищем расширение по магическому числу
-        String extension = database.getExtensionByMagicNumber(magicNumber);
-
-        // Если расширение не найдено, выбрасываем исключение
-        if (extension == null) {
-            throw new UnsupportedFileFormatException("Unsupported file format: " + fileName);
-        }
-
-        return extension;
+    public boolean isExtensionSupported(String extension) {
+        return magicNumberToExtension.containsValue(extension);
     }
 
     /**
-     * Читает магическое число из файла.
+     * Загружает магические числа из файла.
      *
-     * @param file Файл для чтения.
-     * @return Магическое число в виде шестнадцатеричной строки.
+     * @param fileName Имя файла с магическими числами.
      * @throws IOException Если произошла ошибка при чтении файла.
      */
-    private String getMagicNumber(File file) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] bytes = new byte[4];
-            int bytesRead = fis.read(bytes);
-            if (bytesRead != bytes.length) {
-                throw new IOException("Could not read enough bytes from the file.");
+    private void loadMagicNumbersFromFile(String fileName) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    String magicNumber = parts[0].trim();
+                    String extension = parts[1].trim();
+                    magicNumberToExtension.put(magicNumber, extension);
+                }
             }
-            return bytesToHex(bytes);
         }
     }
 
     /**
-     * Преобразует массив байтов в шестнадцатеричную строку.
+     * Возвращает расширение файла по магическому числу.
      *
-     * @param bytes Массив байтов.
-     * @return Шестнадцатеричная строка.
+     * @param magicNumber Магическое число.
+     * @return Расширение файла или null, если магическое число не найдено.
      */
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
+    public String getExtensionByMagicNumber(String magicNumber) {
+        return magicNumberToExtension.get(magicNumber);
     }
 }

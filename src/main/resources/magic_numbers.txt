@@ -1,0 +1,3 @@
+FFD8FFE0:jpg
+89504E47:png
+25504446:pdf
